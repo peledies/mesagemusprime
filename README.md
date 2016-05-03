@@ -3,6 +3,12 @@
 ###Install with Homebrew
 
 ```
-brew tap peledies/messagemus-prime
+brew tap peledies/tap
 brew install messagemus-prime
+```
+
+###Updating
+```
+brew update
+brew upgrade messagemus-prime
 ```
