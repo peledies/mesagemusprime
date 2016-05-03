@@ -5,36 +5,67 @@ magenta=$(tput setaf 5)
 cyan=$(tput setaf 6)
 default=$(tput sgr0)
 
+cols=`tput cols`
+
+wrap_message_body() {
+  default=0
+  pad=$1
+  msg=$2
+  available_width=$(($cols - $pad))
+  echo "$msg" | fold -w $available_width -s
+}
+
 function message_box() {
+  # lets get the message wrapped based on terminal width
+  name_pad=$((${#2} + 4))
+  m=$(wrap_message_body $name_pad "$3")
+
+  message=()
+  while IFS= read -r line
+  do
+      # store each line of the message to an aray
+      message=("${message[@]}" "$line")
+  done <<< "$m"
+
+  # set the message height
+  message_height=${#message[@]}
+
   # store the current cursor location
   tput sc
 
   # clear the top section for the message box
-  clear_space
-
-  # move the cursor to the upper left corner
-  tput cup 0 0
+  clear_space $((${#message[@]} + 2))
     
-  cols=`tput cols`
   TNUM=$(($cols - ${#1} - 4))
   MNUM=$((${#2} + ${#3} + 6))
   NUM=$((${#3} + 6))
 
   echo "${cyan}"
 
+  # move the cursor to the upper left corner
+  tput cup 0 0
+
   # print the top of the info box
   echo -n "##${magenta} $1 ${cyan}"
   eval printf %.0s# '{1..'"${TNUM}"\}; echo
 
   # print the middle of the info box
-  echo -n "#  ${gold}$2: ${default}$3${cyan}"
+  for i in "${!message[@]}";do
+    index=$(($i + 1))
 
-  # print the right of the info box
-  tput cup 2 $cols
-  echo -n "#"
+    if [ $index -eq 1 ];then
+      echo -n "# ${gold}$2: ${default}${message[$i]}${cyan}"
+    else
+      echo "# ${default}${message[$i]}${cyan}"
+    fi
 
-  # print the bottom of the info box
-  tput cup 3 0
+    # print the right of the info box
+    tput cup $index $cols
+    echo -n "#"
+  done
+
+  # # print the bottom of the info box
+  tput cup $(($message_height + 1)) 0
   eval printf %.0s# '{1..'"${cols}"\}; echo
 
   echo "${default}"
@@ -46,9 +77,9 @@ function message_box() {
 # clear the first 4 lines of the terminal
 function clear_space() {
   cols=`tput cols`
-  for row in {0..3}
-  do
-    tput cup $row 0
+
+  for ((row=0;row<$1;row++));do
+   tput cup $row 0
     tput ech $cols
   done
 }
